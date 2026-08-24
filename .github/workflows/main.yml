@@ -1,38 +1,42 @@
-name: Build Flutter APK
+import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
+import 'models/exam_model.dart';
+import 'models/settings_model.dart';
+import 'screens/main_screen.dart';
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+            create: (context) => ExamData()..initializeQuestions()),
+        ChangeNotifierProvider(create: (context) => SettingsModel()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
 
-jobs:
-  build:
-    runs-on: ubuntu-20.04
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  @override
+  Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsModel>(context);
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '11'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.16.0'
-          channel: 'stable'
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: jft-exam-app
-          path: build/app/outputs/flutter-apk/app-release.apk
+    return MaterialApp(
+      title: 'JFT Exam',
+      theme: settings.isDarkMode
+          ? ThemeData.dark()
+          : ThemeData(
+              primarySwatch: Colors.blue,
+              useMaterial3: true,
+            ),
+      debugShowCheckedModeBanner: false,
+      home: const MainScreen(),
+    );
+  }
+}
